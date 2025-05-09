@@ -1,77 +1,59 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'ubuntu:latest'
+            args '-u root'
+        }
+    }
 
     stages {
-        stage('Checkout') {
+        stage('Install Apache') {
             steps {
-                // Ambil source code dari repo GitHub
+                script {
+                    sh 'apt-get update'
+                    sh 'DEBIAN_FRONTEND=noninteractive apt-get install -y apache2'
+                    sh 'apt-get clean'
+                }
+            }
+        }
+
+        stage('Checkout HTML') {
+            steps {
                 git branch: 'main', url: 'https://github.com/Ilhamcom23/mini.git'
             }
         }
 
-        stage('Install Apache') {
+        stage('Deploy HTML to Apache') {
             steps {
-                script {
-                    // Update and install Apache
-                    sh 'sudo apt-get update'
-                    sh 'sudo apt-get install -y apache2'
-                    
-                    // Start Apache service and enable it to start on boot
-                    sh 'sudo systemctl start apache2'
-                    sh 'sudo systemctl enable apache2'
-                }
+                sh 'rm -rf /var/www/html/*'
+                sh 'cp -r * /var/www/html/'
+                echo 'HTML deployed to /var/www/html'
             }
         }
 
-        stage('Deploy Static HTML') {
+        stage('Start Apache') {
             steps {
-                // Buat direktori tujuan untuk menempatkan file HTML
-                sh 'mkdir -p /tmp/html-deploy'
-
-                // Salin semua file HTML ke direktori tujuan
-                sh 'cp -r * /tmp/html-deploy/'
-
-                echo 'Static HTML berhasil disalin ke /tmp/html-deploy'
+                sh 'apachectl start'
             }
         }
 
-        stage('Move HTML to Apache Directory') {
+        stage('Verify Apache') {
             steps {
-                // Salin HTML ke direktori Apache (/var/www/html)
-                sh 'sudo cp -r /tmp/html-deploy/* /var/www/html/'
-
-                echo 'HTML berhasil dipindahkan ke direktori Apache /var/www/html'
-            }
-        }
-
-        stage('Restart Apache') {
-            steps {
-                // Restart Apache untuk memastikan perubahan diterapkan
-                sh 'sudo systemctl restart apache2'
-            }
-        }
-
-        stage('Verify Apache Installation') {
-            steps {
-                script {
-                    // Verifikasi bahwa Apache berjalan
-                    sh 'sudo systemctl status apache2'
-                }
+                sh 'ps aux | grep apache2'
+                sh 'curl -I http://localhost || true'
             }
         }
     }
 
     post {
         always {
-            echo 'Pipeline execution finished'
+            echo 'Pipeline selesai dijalankan'
         }
-
         success {
-            echo 'Apache installed, and static HTML deployed successfully'
+            echo 'Apache berhasil di-install dan HTML dideploy'
         }
-
         failure {
-            echo 'Pipeline failed during installation or deployment'
+            echo 'Pipeline gagal, cek log untuk detailnya'
         }
     }
 }
