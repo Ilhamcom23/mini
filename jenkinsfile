@@ -1,0 +1,24 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Ambil source code dari repo GitHub
+                checkout scm
+            }
+        }
+
+        stage('Deploy Static HTML') {
+            steps {
+                // Buat direktori tujuan (kalau belum ada)
+                sh 'mkdir -p /tmp/html-deploy'
+
+                // Salin semua file HTML ke direktori tersebut
+                sh 'cp -r * /tmp/html-deploy/'
+
+                echo 'Static HTML berhasil disalin ke /tmp/html-deploy'
+            }
+        }
+    }
+}
