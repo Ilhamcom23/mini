@@ -5,7 +5,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Ambil source code dari repo GitHub
-                checkout scm
+                git branch: 'main', url: 'https://github.com/Ilhamcom23/mini.git'
             }
         }
 
